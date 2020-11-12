@@ -1,0 +1,18 @@
+fragment Foo on Foo {
+  id
+}
+
+query GetFoo {
+  id
+  query
+  mutation
+  foo {
+    ...Foo
+  }
+}
+
+mutation CreateFoo {
+  createFoo {
+    ...Foo
+  }
+}

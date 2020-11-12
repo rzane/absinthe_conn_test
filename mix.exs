@@ -22,7 +22,8 @@ defmodule Absinthe.ConnTest.MixProject do
   defp deps do
     [
       {:plug, ">= 0.0.0"},
-      {:phoenix, ">= 0.0.0"}
+      {:phoenix, ">= 0.0.0"},
+      {:jason, ">= 0.0.0", only: :test}
     ]
   end
 end
