@@ -7,15 +7,10 @@ defmodule Absinthe.ConnTest.Loader do
   alias Absinthe.Language.OperationDefinition
   alias Absinthe.Language.Fragment
   alias Absinthe.Language.FragmentSpread
-  alias Absinthe.ConnTest.Error
-  alias Absinthe.ConnTest.Loader.Query
+  alias Absinthe.ConnTest.LoadError
 
   @typep input :: String.t()
   @typep lines :: [String.t()]
-
-  defmodule Error do
-    defexception [:message]
-  end
 
   defmodule Query do
     @moduledoc false
@@ -43,7 +38,7 @@ defmodule Absinthe.ConnTest.Loader do
     imports ++ parse!(input, path)
   end
 
-  @doc "Resolve all dependencies from queries"
+  @doc "Resolve all dependencies from queries, thus removing fragments"
   @spec resolve([Query.t()]) :: [Query.t()]
   def resolve(queries) do
     {fragments, operations} = Enum.split_with(queries, &is_fragment/1)
@@ -73,7 +68,7 @@ defmodule Absinthe.ConnTest.Loader do
       {:error, blueprint} ->
         %{execution: %{validation_errors: [error]}} = blueprint
         %{message: message, locations: [%{line: line}]} = error
-        raise Error, "#{message} (#{path}:#{line})"
+        raise LoadError, "#{message} (#{path}:#{line})"
     end
   end
 
@@ -139,7 +134,7 @@ defmodule Absinthe.ConnTest.Loader do
       :error ->
         names = fragments |> Map.keys() |> inspect()
 
-        raise Error, """
+        raise LoadError, """
         Fragment '#{name}' does not exist. Valid fragments are: #{names}
         """
     end
