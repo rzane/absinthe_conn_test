@@ -1,4 +1,6 @@
 defmodule Absinthe.ConnTest.HTTP do
+  @moduledoc false
+
   def request(query, variables) when is_list(variables) do
     request(query, Map.new(variables))
   end

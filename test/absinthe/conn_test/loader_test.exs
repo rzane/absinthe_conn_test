@@ -2,7 +2,7 @@ defmodule Absinthe.ConnTest.LoaderTest do
   use ExUnit.Case, async: true
 
   alias Absinthe.ConnTest.Loader
-  alias Absinthe.ConnTest.Error
+  alias Absinthe.ConnTest.Loader.Error
 
   @foo "fragment Foo on Foo { id bar { ...Bar } }"
   @bar "fragment Bar on Bar { id }"
@@ -54,11 +54,13 @@ defmodule Absinthe.ConnTest.LoaderTest do
     end
   end
 
-  # test "raises an error for a missing fragment" do
-  #   assert_raise Absinthe.ConnTest.Error, fn ->
-  #     Loader.load!("test/fixtures/fragment-not-found.graphql")
-  #   end
-  # end
+  test "raises an error for a missing fragment" do
+    queries = Loader.load!("test/fixtures/fragment-not-found.graphql")
+
+    assert_raise Error, ~r/Fragment 'Foo' does not exist/, fn ->
+      Loader.resolve(queries)
+    end
+  end
 
   defp strip(text) do
     text

@@ -1,7 +1,5 @@
 defmodule Absinthe.ConnTest.Loader do
-  @moduledoc """
-  Reads a file containing GraphQL queries and parses them.
-  """
+  @moduledoc false
 
   alias Absinthe.Phase.Parse
   alias Absinthe.Language
@@ -13,10 +11,29 @@ defmodule Absinthe.ConnTest.Loader do
   alias Absinthe.ConnTest.Loader.Query
 
   @typep input :: String.t()
-  @typep line :: String.t()
-  @typep path :: String.t()
-  @typep name :: String.t()
-  @typep fragments :: %{name() => Query.t()}
+  @typep lines :: [String.t()]
+
+  defmodule Error do
+    defexception [:message]
+  end
+
+  defmodule Query do
+    @moduledoc false
+
+    defstruct [:name, :needs, :source, :type]
+
+    @type name :: String.t()
+    @type needs :: [name()]
+    @type source :: String.t()
+    @type type :: :fixture | :query | :mutation | :subscription
+    @type mapping :: %{name() => t()}
+    @type t :: %__MODULE__{
+            name: name(),
+            type: type(),
+            needs: needs(),
+            source: source()
+          }
+  end
 
   @doc "Load all queries and fragments from a file"
   @spec load!(Path.t()) :: [Query.t()]
@@ -46,21 +63,21 @@ defmodule Absinthe.ConnTest.Loader do
     resolve(query, fragments)
   end
 
-  @spec parse!(input(), path()) :: [Query.t()]
+  @spec parse!(input(), Path.t()) :: [Query.t()]
   @dialyzer {:no_match, parse!: 2}
-  defp parse!(input, name) do
-    case Parse.run(%Source{name: name, body: input}) do
+  defp parse!(input, path) do
+    case Parse.run(%Source{name: path, body: input}) do
       {:ok, %{input: %{definitions: nodes}}} ->
         build(nodes, String.split(input, ~r/\r?\n/))
 
       {:error, blueprint} ->
         %{execution: %{validation_errors: [error]}} = blueprint
         %{message: message, locations: [%{line: line}]} = error
-        raise Error, "#{message} (#{name}:#{line})"
+        raise Error, "#{message} (#{path}:#{line})"
     end
   end
 
-  @spec build([Language.t()], [line()]) :: [Query.t()]
+  @spec build([Language.t()], lines()) :: [Query.t()]
   defp build(nodes, lines, queries \\ [])
   defp build([], _lines, queries), do: queries
 
@@ -75,7 +92,7 @@ defmodule Absinthe.ConnTest.Loader do
     build(nodes, lines, queries ++ [query])
   end
 
-  @spec get_source(Language.t(), [Language.t()], [line()]) :: String.t()
+  @spec get_source(Language.t(), [Language.t()], lines()) :: Query.source()
   def get_source(a, [], lines) do
     start = {a.loc.line - 1, a.loc.column - 1}
     do_get_source(lines, start, {-1, -1})
@@ -98,7 +115,7 @@ defmodule Absinthe.ConnTest.Loader do
   defp get_type(%OperationDefinition{operation: type}), do: type
   defp get_type(%Fragment{}), do: :fragment
 
-  @spec find_needs(Language.t()) :: [name()]
+  @spec find_needs(Language.t()) :: Query.needs()
   defp find_needs(node, names \\ [])
 
   defp find_needs(%FragmentSpread{name: name}, names) do
@@ -113,15 +130,18 @@ defmodule Absinthe.ConnTest.Loader do
     names
   end
 
-  @spec fetch_fragment!(fragments(), name()) :: Query.t()
+  @spec fetch_fragment!(Query.mapping(), Query.name()) :: Query.t()
   defp fetch_fragment!(fragments, name) do
     case Map.fetch(fragments, name) do
       {:ok, fragment} ->
         fragment
 
       :error ->
-        names = fragments |> Map.keys() |> Enum.map_join(&"  * #{&1}\n")
-        raise "Fragment '#{name}' does not exist. Valid fragments are:\n#{names}"
+        names = fragments |> Map.keys() |> inspect()
+
+        raise Error, """
+        Fragment '#{name}' does not exist. Valid fragments are: #{names}
+        """
     end
   end
 end

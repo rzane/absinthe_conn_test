@@ -22,3 +22,5 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 absinthe_conn_test-*.tar
 
+# Ignore ElixirLS
+/.elixir_ls
