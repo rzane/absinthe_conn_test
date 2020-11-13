@@ -31,8 +31,8 @@ defmodule Absinthe.ConnTest.MixProject do
   defp deps do
     [
       {:absinthe, "~> 1.5"},
-      {:plug, "~> 1.11"},
-      {:phoenix, "~> 1.5"},
+      {:plug, "~> 1.0"},
+      {:phoenix, "~> 1.0"},
       {:jason, ">= 0.0.0", only: :test},
       {:absinthe_plug, ">= 0.0.0", only: :test},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
