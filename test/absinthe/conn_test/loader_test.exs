@@ -47,15 +47,13 @@ defmodule Absinthe.ConnTest.LoaderTest do
   end
 
   test "raises an error for an invalid query" do
-    message = "syntax error before: \"There\" (test/fixtures/invalid.graphql:1)"
-
-    assert_raise Error, message, fn ->
-      Loader.load!("test/fixtures/invalid.graphql")
-    end
+    path = "test/fixtures/errors/invalid.graphql"
+    message = "syntax error before: \"There\" (#{path}:1)"
+    assert_raise Error, message, fn -> Loader.load!(path) end
   end
 
   test "raises an error for a missing fragment" do
-    queries = Loader.load!("test/fixtures/fragment-not-found.graphql")
+    queries = Loader.load!("test/fixtures/errors/fragment-not-found.graphql")
 
     assert_raise Error, ~r/Fragment 'Foo' does not exist/, fn ->
       Loader.resolve(queries)
@@ -63,14 +61,8 @@ defmodule Absinthe.ConnTest.LoaderTest do
   end
 
   test "expands imports" do
-    queries = Loader.load!("test/fixtures/imports.graphql")
-
-    assert Enum.map(queries, & &1.name) == [
-             "Foo",
-             "GetFoo",
-             "Bar",
-             "ListFoos"
-           ]
+    queries = Loader.load!("test/fixtures/imports/queries.graphql")
+    assert Enum.map(queries, & &1.name) == ["Bar", "Foo", "GetFoo"]
   end
 
   defp strip(text) do

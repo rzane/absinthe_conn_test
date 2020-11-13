@@ -38,16 +38,15 @@ defmodule Absinthe.ConnTest.Loader do
   @doc "Load all queries and fragments from a file"
   @spec load!(Path.t()) :: [Query.t()]
   def load!(path) do
-    path
-    |> File.read!()
-    |> expand_imports(path)
-    |> parse!(path)
+    input = File.read!(path)
+    imports = load_imports!(input, path)
+    imports ++ parse!(input, path)
   end
 
   @doc "Resolve all dependencies from queries"
   @spec resolve([Query.t()]) :: [Query.t()]
   def resolve(queries) do
-    {fragments, operations} = Enum.split_with(queries, &(&1.type == :fragment))
+    {fragments, operations} = Enum.split_with(queries, &is_fragment/1)
     fragments = Map.new(fragments, &{&1.name, &1})
     Enum.map(operations, &resolve(&1, fragments))
   end
@@ -147,19 +146,21 @@ defmodule Absinthe.ConnTest.Loader do
   end
 
   @import_pattern ~r/^#import "(.*)"$/m
-  @spec expand_imports(input(), Path.t()) :: input()
-  defp expand_imports(input, relative_to) do
+  @spec load_imports!(input(), Path.t()) :: [Query.t()]
+  defp load_imports!(input, relative_to) do
     root = Path.dirname(relative_to)
 
     @import_pattern
     |> Regex.scan(input)
-    |> Enum.reduce(input, fn [_, path], acc ->
-      path = Path.expand(path, root)
-
+    |> Enum.flat_map(fn [_, path] ->
       path
-      |> File.read!()
-      |> expand_imports(path)
-      |> Kernel.<>(acc)
+      |> Path.expand(root)
+      |> load!()
+      |> Enum.filter(&is_fragment/1)
     end)
   end
+
+  @spec is_fragment(Query.t()) :: boolean()
+  defp is_fragment(%Query{type: :fragment}), do: true
+  defp is_fragment(%Query{}), do: false
 end

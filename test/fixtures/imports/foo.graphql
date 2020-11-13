@@ -1,0 +1,11 @@
+#import "./bar.graphql"
+
+fragment Foo on Foo {
+  bar {
+    ...Bar
+  }
+}
+
+query DoNotImportMe {
+  becauseImportsOnlyConsiderFragments
+}

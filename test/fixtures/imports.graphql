@@ -1,7 +1,0 @@
-#import "./queries.graphql"
-
-query ListFoos {
-  foos {
-    ...Foo
-  }
-}
