@@ -1,18 +1,16 @@
 fragment Foo on Foo {
   id
+  bar {
+    ...Bar
+  }
 }
 
 query GetFoo {
-  id
-  query
-  mutation
   foo {
     ...Foo
   }
 }
 
-mutation CreateFoo {
-  createFoo {
-    ...Foo
-  }
+fragment Bar on Bar {
+  id
 }
