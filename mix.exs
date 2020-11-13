@@ -30,9 +30,9 @@ defmodule Absinthe.ConnTest.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:absinthe, ">= 0.0.0"},
-      {:plug, ">= 0.0.0"},
-      {:phoenix, ">= 0.0.0"},
+      {:absinthe, "~> 1.5"},
+      {:plug, "~> 1.11"},
+      {:phoenix, "~> 1.5"},
       {:jason, ">= 0.0.0", only: :test},
       {:absinthe_plug, ">= 0.0.0", only: :test},
       {:ex_doc, "~> 0.23", only: :dev, runtime: false}
