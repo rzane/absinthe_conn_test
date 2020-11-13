@@ -1,0 +1,12 @@
+query Hello($name: String) {
+  hello(name: $name)
+}
+
+mutation CreateProfile($data: ProfileInput) {
+  profile: createProfile(data: $data) {
+    name
+    image {
+      filename
+    }
+  }
+}
