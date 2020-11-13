@@ -19,7 +19,7 @@ def deps do
 end
 ```
 
-## Usage
+## Setup
 
 You'll probably want to import this module in your `ConnCase`.
 
@@ -48,49 +48,59 @@ defmodule MyAppWeb.ConnCase do
 end
 ```
 
-Great, now you're ready to test!
+## Testing
 
-```elixir
-test "hello world", %{conn: conn} do
-  assert {:ok, %{"hello" => "Hello, world!"}} = graphql(conn, "query { hello }")
-end
-```
-
-### Importing Queries
-
-First, create a query in a file:
-
-```graphql
-# assets/src/queries/users.graphql
-
-query GetUser($id: ID!) {
-  user(id: $id) {
-    id
-    name
-  }
-}
-```
-
-Now, you can simply import these queries, which will convert them to test functions!
+A simple test might look something like this:
 
 ```elixir
 defmodule MyAppWeb.Schema.UsersTest do
   use MyAppWeb.ConnCase
 
-  import_queries "assets/src/queries/users.graphql"
+  @say_hello """
+  query SayHello($name: String!) {
+    hello(name: $name)
+  }
+  """
 
-  test "returns a user", %{conn: conn} do
-    user = Users.insert_user(%{name: "Sally"})
-
-    assert {:ok, data} = get_user(conn, id: user.id)
-    assert data["user"]["name"] == "Sally"
+  test "hello", %{conn: conn} do
+    assert {:ok, %{"hello" => "Hello, Ray!"}} =
+            graphql(conn, @say_hello, name: "Ray")
   end
 end
 ```
 
+### Importing queries
+
+Yuck, it's kind of annoying to write your queries in your test file. Let's move
+them to dedicated `.graphql` file:
+
+```graphql
+# test/fixtures/queries.graphql
+
+query SayHello($name: String!) {
+  hello(name: $name)
+}
+```
+
+Now, you can import those queries, and they'll become test functions!
+
+```elixir
+defmodule MyAppWeb.Schema.UsersTest do
+  use MyAppWeb.ConnCase
+
+  import_queries "test/fixtures/queries.graphql"
+
+  test "hello", %{conn: conn} do
+    assert {:ok, %{"hello" => "Hello, Ray!"}} = say_hello(conn, name: "Ray")
+  end
+end
+```
+
+Note that in the example above the `SayHello` query became a function `say_hello`.
+
 ### Errors
 
-Here's how you'd test an error:
+Errors are returned in a concise format:
 
 ```elixir
 test "produces an error message", %{conn: conn} do
@@ -104,5 +114,55 @@ If your error contains extensions, it'll look like this:
 test "produces an error message with extensions", %{conn: conn} do
   assert {:error, [{"is invalid", %{"code" => "VALIDATION_ERROR"}}]} =
            create_user(conn, data: %{})
+end
+```
+
+### Fragments
+
+Yup, they're supported too. It will also resolve `#import` expressions.
+
+```graphql
+# test/fixtures/users.graphql
+
+fragment User on User {
+  id
+  name
+}
+```
+
+```graphql
+#import "./user.graphql"
+
+query ListUsers {
+  users {
+    ...User
+  }
+}
+```
+
+### File Uploads
+
+If you attempt to send a [`%Plug.Upload{}`](https://hexdocs.pm/plug/Plug.Upload.html)
+to your API, this library will extract it for you in accordance with Absinthe's [file
+upload specification](https://hexdocs.pm/absinthe/file-uploads.html).
+
+```graphql
+# test/fixtures/queries.graphl
+
+mutation UploadImage($image: Upload!) {
+  uploadImage(image: $image)
+}
+```
+
+```elixir
+import_queries "test/fixtures/queries.graphql"
+
+test "uploading an image", %{conn: conn} do
+  image = %Plug.Upload{
+    filename: "foo.png",
+    path: "test/fixtures/image.png"
+  }
+
+  assert {:ok, } = upload_image(conn, image: image)
 end
 ```
