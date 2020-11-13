@@ -1,19 +1,20 @@
 defmodule Absinthe.ConnTest do
   alias Absinthe.ConnTest.Uploads
 
-  defmacro __using__(opts \\ []) do
-    path = Keyword.get(opts, :path, "/graphql")
+  @type query :: String.t()
+  @type variables :: keyword() | map()
 
+  @spec graphql(Plug.Conn.t(), query(), variables()) :: Macro.t()
+  defmacro graphql(conn, query, variables \\ %{}) do
     quote do
-      import Absinthe.ConnTest
-
-      def graphql(conn, query, variables \\ %{}) do
-        graphql(conn, @endpoint, unquote(path), query, variables)
-      end
+      graphql(unquote(conn), @endpoint, @graphql, unquote(query), unquote(variables))
     end
   end
 
-  def graphql(conn, endpoint, path, query, variables) do
+  def graphql(%Plug.Conn{} = conn, endpoint, path, query, variables) when is_binary(query) do
+    if is_nil(endpoint), do: raise("no @endpoint set in test case")
+    if is_nil(path), do: raise("no @graphql set in test case")
+
     {body, content_type} = build_request(query, variables)
 
     conn
