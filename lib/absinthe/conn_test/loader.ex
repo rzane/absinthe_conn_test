@@ -40,6 +40,7 @@ defmodule Absinthe.ConnTest.Loader do
   def load!(path) do
     path
     |> File.read!()
+    |> expand_imports(path)
     |> parse!(path)
   end
 
@@ -143,5 +144,22 @@ defmodule Absinthe.ConnTest.Loader do
         Fragment '#{name}' does not exist. Valid fragments are: #{names}
         """
     end
+  end
+
+  @import_pattern ~r/^#import "(.*)"$/m
+  @spec expand_imports(input(), Path.t()) :: input()
+  defp expand_imports(input, relative_to) do
+    root = Path.dirname(relative_to)
+
+    @import_pattern
+    |> Regex.scan(input)
+    |> Enum.reduce(input, fn [_, path], acc ->
+      path = Path.expand(path, root)
+
+      path
+      |> File.read!()
+      |> expand_imports(path)
+      |> Kernel.<>(acc)
+    end)
   end
 end

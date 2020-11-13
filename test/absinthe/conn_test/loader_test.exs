@@ -62,6 +62,17 @@ defmodule Absinthe.ConnTest.LoaderTest do
     end
   end
 
+  test "expands imports" do
+    queries = Loader.load!("test/fixtures/imports.graphql")
+
+    assert Enum.map(queries, & &1.name) == [
+             "Foo",
+             "GetFoo",
+             "Bar",
+             "ListFoos"
+           ]
+  end
+
   defp strip(text) do
     text
     |> String.replace(~r/\s+/, " ")
